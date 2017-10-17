@@ -134,15 +134,15 @@ open class KeychainSwift {
   
   */
   open func get(_ key: String) -> String? {
-    
-    guard let data = getData(key) else {
-        return nil
-    }
-      if let currentString = String(data: data, encoding: .utf8) {
+    if let data = getData(key) {
+      
+      if let currentString = NSString(data: data, encoding: String.Encoding.utf8.rawValue) as? String {
         return currentString
       }
       
       lastResultCode = -67853 // errSecInvalidEncoding
+    }
+
     return nil
   }
 
@@ -156,27 +156,23 @@ open class KeychainSwift {
   */
   open func getData(_ key: String) -> Data? {
     let prefixedKey = keyWithPrefix(key)
+    let query: [String: Any] = [
+          KeychainSwiftConstants.klass       : kSecClassGenericPassword as String,
+          KeychainSwiftConstants.attrAccount : prefixedKey as String,
+          KeychainSwiftConstants.returnData  : kCFBooleanTrue,
+          KeychainSwiftConstants.matchLimit  : kSecMatchLimitOne as String
+        ]
+    let searchDictionary = addAccessGroupWhenPresent(query)
     
-    var query: [String: Any] = [
-      KeychainSwiftConstants.klass       : kSecClassGenericPassword,
-      KeychainSwiftConstants.attrAccount : prefixedKey,
-      KeychainSwiftConstants.returnData  : kCFBooleanTrue,
-      KeychainSwiftConstants.matchLimit  : kSecMatchLimitOne
-    ]
+    var retrievedData: AnyObject?
+    let status = SecItemCopyMatching(searchDictionary as CFDictionary, &retrievedData)
     
-    query = addAccessGroupWhenPresent(query)
-    query = addSynchronizableIfRequired(query, addingItems: false)
-    lastQueryParameters = query
-    
-    var result: AnyObject?
-    
-    lastResultCode = withUnsafeMutablePointer(to: &result) {
-      SecItemCopyMatching(query as CFDictionary, UnsafeMutablePointer($0))
+    var data: Data?
+    if status == errSecSuccess {
+        data = retrievedData as? Data
     }
     
-    if lastResultCode == noErr { return result as? Data }
-    
-    return nil
+    return data
   }
 
   /**
