@@ -14,6 +14,8 @@ open class KeychainSwift {
   open var lastResultCode: OSStatus = noErr
 
   var keyPrefix = "" // Can be useful in test.
+    
+  private let readLock = NSLock()
   
   /**
 
@@ -155,6 +157,9 @@ open class KeychainSwift {
   
   */
   open func getData(_ key: String) -> Data? {
+    readLock.lock()
+    defer { readLock.unlock() }
+    
     let prefixedKey = keyWithPrefix(key)
     let query: [String: Any] = [
           KeychainSwiftConstants.klass       : kSecClassGenericPassword as String,
