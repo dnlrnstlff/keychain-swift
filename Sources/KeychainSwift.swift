@@ -14,6 +14,8 @@ open class KeychainSwift {
   open var lastResultCode: OSStatus = noErr
 
   var keyPrefix = "" // Can be useful in test.
+    
+  private let queue = DispatchQueue(label: "dnlrnstlff/keychain-swift")
   
   /**
 
@@ -155,24 +157,30 @@ open class KeychainSwift {
   
   */
   open func getData(_ key: String) -> Data? {
+    var result: AnyObject?
+    
+    queue.sync {
+    
     let prefixedKey = keyWithPrefix(key)
-    let query: [String: Any] = [
+    var query: [String: Any] = [
           KeychainSwiftConstants.klass       : kSecClassGenericPassword as String,
           KeychainSwiftConstants.attrAccount : prefixedKey as String,
           KeychainSwiftConstants.returnData  : kCFBooleanTrue,
           KeychainSwiftConstants.matchLimit  : kSecMatchLimitOne as String
         ]
-    let searchDictionary = addAccessGroupWhenPresent(query)
-    
-    var retrievedData: AnyObject?
-    let status = SecItemCopyMatching(searchDictionary as CFDictionary, &retrievedData)
-    
-    var data: Data?
-    if status == errSecSuccess {
-        data = retrievedData as? Data
+        query = addAccessGroupWhenPresent(query)
+        query = addSynchronizableIfRequired(query, addingItems: false)
+        lastQueryParameters = query
+        
+        lastResultCode = withUnsafeMutablePointer(to: &result) {
+            SecItemCopyMatching(query as CFDictionary, UnsafeMutablePointer($0))
+        }
     }
     
-    return data
+    guard lastResultCode == noErr else { return nil }
+    
+    return result as? Data
+    
   }
 
   /**
