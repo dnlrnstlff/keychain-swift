@@ -105,3 +105,4 @@ public enum KeychainSwiftAccessOptions {
     return KeychainSwiftConstants.toString(value)
   }
 }
+

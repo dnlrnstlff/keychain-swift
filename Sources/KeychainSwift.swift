@@ -14,8 +14,6 @@ open class KeychainSwift {
   open var lastResultCode: OSStatus = noErr
 
   var keyPrefix = "" // Can be useful in test.
-    
-  private let queue = DispatchQueue(label: "dnlrnstlff/keychain-swift")
   
   /**
 
@@ -138,7 +136,7 @@ open class KeychainSwift {
   open func get(_ key: String) -> String? {
     if let data = getData(key) {
       
-      if let currentString = NSString(data: data, encoding: String.Encoding.utf8.rawValue) as? String {
+      if let currentString = String(data: data, encoding: .utf8) {
         return currentString
       }
       
@@ -157,30 +155,31 @@ open class KeychainSwift {
   
   */
   open func getData(_ key: String) -> Data? {
-    var result: AnyObject?
-    
-    queue.sync {
+    // The lock prevents the code to be run simlultaneously
+    // from multiple threads which may result in crashing
     
     let prefixedKey = keyWithPrefix(key)
+    
     var query: [String: Any] = [
-          KeychainSwiftConstants.klass       : kSecClassGenericPassword as String,
-          KeychainSwiftConstants.attrAccount : prefixedKey as String,
-          KeychainSwiftConstants.returnData  : kCFBooleanTrue,
-          KeychainSwiftConstants.matchLimit  : kSecMatchLimitOne as String
-        ]
-        query = addAccessGroupWhenPresent(query)
-        query = addSynchronizableIfRequired(query, addingItems: false)
-        lastQueryParameters = query
-        
-        lastResultCode = withUnsafeMutablePointer(to: &result) {
-            SecItemCopyMatching(query as CFDictionary, UnsafeMutablePointer($0))
-        }
+      KeychainSwiftConstants.klass       : kSecClassGenericPassword,
+      KeychainSwiftConstants.attrAccount : prefixedKey,
+      KeychainSwiftConstants.returnData  : kCFBooleanTrue,
+      KeychainSwiftConstants.matchLimit  : kSecMatchLimitOne
+    ]
+    
+    query = addAccessGroupWhenPresent(query)
+    query = addSynchronizableIfRequired(query, addingItems: false)
+    lastQueryParameters = query
+    
+    var result: AnyObject?
+    
+    lastResultCode = withUnsafeMutablePointer(to: &result) {
+      SecItemCopyMatching(query as CFDictionary, UnsafeMutablePointer($0))
     }
     
-    guard lastResultCode == noErr else { return nil }
+    if lastResultCode == noErr { return result as? Data }
     
-    return result as? Data
-    
+    return nil
   }
 
   /**

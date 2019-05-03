@@ -1,5 +1,35 @@
 # KeychainSwift version history
 
+## 15.0.0 (2019-04-24)
+
+Added ability to return data as reference ([mediym41](https://github.com/mediym41)).
+
+
+## 14.0.0 (2019-04-03)
+
+Update to Swift 5.0 ([schayes04](https://github.com/schayes04)).
+
+
+## 13.0.0 (2018-10-23)
+
+Increased watchOS deployment target to 3.0 ([xuaninbox](https://github.com/xuaninbox)).
+
+
+## 12.0.0 (2018-09-19)
+
+Update to Swift 4.2 ([beny](https://github.com/beny)).
+
+
+## 11.0.0 (2018-03-31)
+
+Added Swift language version to the podspec file for CocoaPods.
+
+
+## 10.0.0 (2017-10-30)
+
+Fixed a crash in `getData` when called simultaneously from different threads ([details](https://github.com/evgenyneu/keychain-swift/pull/68)).
+
+
 ## 9.0.0 (2017-09-23)
 
 Update to Swift 4.0.
